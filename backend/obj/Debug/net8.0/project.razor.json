@@ -1,0 +1,20 @@
+{
+  "SerializedFilePath": "/home/arsen/Desktop/3-2/DevOps - стратегії розгортання програмного забезпечення/Лабораторна робота №5 [PENDING]/DevOpsLab5/backend/obj/Debug/net8.0/project.razor.json",
+  "FilePath": "/home/arsen/Desktop/3-2/DevOps - стратегії розгортання програмного забезпечення/Лабораторна робота №5 [PENDING]/DevOpsLab5/backend/LibraryPlatform.csproj",
+  "Configuration": {
+    "ConfigurationName": "MVC-3.0",
+    "LanguageVersion": "8.0",
+    "Extensions": [
+      {
+        "ExtensionName": "MVC-3.0"
+      }
+    ]
+  },
+  "ProjectWorkspaceState": {
+    "TagHelpers": [],
+    "CSharpLanguageVersion": 1200
+  },
+  "RootNamespace": "LibraryPlatform",
+  "Documents": [],
+  "SerializationFormat": "0.3"
+}
