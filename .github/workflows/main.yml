@@ -12,12 +12,12 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # В GHCR обязательно нужно указывать владельца (repository_owner) перед именем образа
+  # image names
   BACKEND_IMAGE_NAME: ${{ github.repository_owner }}/devopslab5-backend
   DATABASE_IMAGE_NAME: ${{ github.repository_owner }}/devopslab5-database
 
 jobs:
-  # Проверка компиляции (работает на PR и Push)
+  # check (work for PR and Push)
   build-and-test:
     runs-on: ubuntu-latest
     steps:
@@ -39,13 +39,13 @@ jobs:
       - name: Build DB (check only)
         uses: docker/build-push-action@v5
         with:
-          context: ./database # Исправлено: единый путь
+          context: ./database
           push: false
-          tags: ${{ env.REGISTRY }}/${{ env.DATABASE_IMAGE_NAME }}:test # Исправлено: правильное имя переменной
+          tags: ${{ env.REGISTRY }}/${{ env.DATABASE_IMAGE_NAME }}:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Пуш образов (только для Push, игнорируем PR)
+  # push images (only for Push, ingore PR)
   push-to-registry:
     needs: build-and-test
     if: github.event_name != 'pull_request'
@@ -64,13 +64,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- BACKEND ---
+      # backend
       - name: Extract metadata for Backend
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
-          # Здесь происходит магия разделения: создается тег :dev или :main в зависимости от ветки
           tags: |
             type=ref,event=branch
             type=sha,format=short
@@ -83,13 +82,12 @@ jobs:
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
 
-      # --- DATABASE ---
+      # database
       - name: Extract metadata for DB
         id: meta-db
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.DATABASE_IMAGE_NAME }} # Исправлено: правильное имя переменной
-          # Здесь происходит магия разделения: создается тег :dev или :main в зависимости от ветки
+          images: ${{ env.REGISTRY }}/${{ env.DATABASE_IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=sha,format=short
@@ -97,41 +95,43 @@ jobs:
       - name: Build and push DB image
         uses: docker/build-push-action@v5
         with:
-          context: ./database # Исправлено: единый путь
+          context: ./database
           push: true
           tags: ${{ steps.meta-db.outputs.tags }}
           labels: ${{ steps.meta-db.outputs.labels }}
 
-  # Деплой на DEV (Срабатывает только при пуше в dev)
+  # deploy to DEV (only by Push to Dev)
   deploy-dev:
     needs: push-to-registry
     if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to DEV Server via SSH
+      - name: Deploy to Dev server via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.SERVER_DEV_HOST }}
+          username: ${{ secrets.SERVER_DEV_USER }}
+          key: ${{ secrets.SERVER_DEV_SSH_KEY }}
           script: |
-            cd /path/to/your/project
-            docker-compose pull
-            docker-compose up -d --remove-orphans
+            cd /srv/project/
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.yml -o docker-compose.yml
+            docker compose pull
+            docker compose up -d --remove-orphans
 
-  # Деплой на MAIN (Срабатывает только при пуше в main)
+  # deploy to Main (only by Push to Main)
   deploy-main:
     needs: push-to-registry
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to PROD Server via SSH
+      - name: Deploy to Main server via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.SERVER_MAIN_HOST }}
+          username: ${{ secrets.SERVER_MAIN_USER }}
+          key: ${{ secrets.SERVER_MAIN_SSH_KEY }}
           script: |
-            cd /path/to/your/project
-            docker-compose pull
-            docker-compose up -d --remove-orphans
+            cd /srv/project/
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.yml -o docker-compose.yml
+            docker compose pull
+            docker compose up -d --remove-orphans

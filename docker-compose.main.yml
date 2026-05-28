@@ -1,0 +1,33 @@
+services:
+  backend:
+    image: ghcr.io/adamenko-arsen/devopslab5-backend:${APP_STAGE}
+    container_name: libraryplatform-backend-app
+    ports:
+      - '5000:5000'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    restart: always
+    environment:
+      - ASPNETCORE_URLS=http://+:5000
+    depends_on:
+      database:
+        condition: service_healthy
+
+  database:
+    image: ghcr.io/adamenko-arsen/devopslab5-database:${APP_STAGE}
+    container_name: libraryplatform-database-app
+    restart: always
+    environment:
+      PGDATA: /var/lib/postgresql/data
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: postgres
+    ports:
+      - '5009:5432'
+    volumes:
+      - ${DB_PATH}:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
