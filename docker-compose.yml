@@ -1,17 +1,18 @@
 services:
+  # core services
   backend:
     image: ghcr.io/adamenko-arsen/devopslab5-backend:${APP_STAGE}
     container_name: libraryplatform-backend-app
     ports:
       - '5000:5000'
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
     restart: always
     environment:
       - ASPNETCORE_URLS=http://+:5000
     depends_on:
       database:
         condition: service_healthy
+    networks:
+      - libplat-network
 
   database:
     image: ghcr.io/adamenko-arsen/devopslab5-database:${APP_STAGE}
@@ -22,8 +23,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 12345678
       POSTGRES_DB: postgres
-    ports:
-      - '5009:5432'
     volumes:
       - ${DB_PATH}:/var/lib/postgresql/data
     healthcheck:
@@ -31,3 +30,65 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - libplat-network
+
+  # monitoring
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "4000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAPHANA_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - hive-network
+
+  # metric logs
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+    networks:
+      - hive-network
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    restart: unless-stopped
+    networks:
+      - hive-network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: unless-stopped
+    networks:
+      - hive-network
+
+  # text logs
+  loki:
+    image: grafana/loki:2.9.0
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - hive-network
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./monitoring/promtail.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    networks:
+      - hive-network
+
+networks:
+  libplat-network:
+    driver: bridge

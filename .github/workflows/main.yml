@@ -114,9 +114,12 @@ jobs:
           key: ${{ secrets.SERVER_DEV_SSH_KEY }}
           script: |
             cd /srv/project/
+            mkdir -p monitoring
             curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.yml -o docker-compose.yml
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/monitoring/prometheus.yml -o monitoring/prometheus.yml
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/monitoring/promtail.yml -o monitoring/promtail.yml
             docker compose pull
-            docker compose up -d --remove-orphans
+            docker compose --env-file environment.cfg up -d --remove-orphans
 
   # deploy to Main (only by Push to Main)
   deploy-main:
@@ -132,6 +135,9 @@ jobs:
           key: ${{ secrets.SERVER_MAIN_SSH_KEY }}
           script: |
             cd /srv/project/
+            mkdir -p monitoring
             curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.yml -o docker-compose.yml
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/monitoring/prometheus.yml -o monitoring/prometheus.yml
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/monitoring/promtail.yml -o monitoring/promtail.yml
             docker compose pull
-            docker compose up -d --remove-orphans
+            docker compose --env-file environment.cfg up -d --remove-orphans
