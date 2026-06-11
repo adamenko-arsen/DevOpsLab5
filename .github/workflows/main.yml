@@ -81,6 +81,7 @@ jobs:
           push: true
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
+          provenance: false
 
       # database
       - name: Extract metadata for DB
@@ -99,6 +100,7 @@ jobs:
           push: true
           tags: ${{ steps.meta-db.outputs.tags }}
           labels: ${{ steps.meta-db.outputs.labels }}
+          provenance: false
 
   # deploy to DEV (only by Push to Dev)
   deploy-dev:
@@ -113,7 +115,7 @@ jobs:
           username: ${{ secrets.SERVER_DEV_USER }}
           key: ${{ secrets.SERVER_DEV_SSH_KEY }}
           script: |
-            cd /srv/project/
+            cd /srv/libproj/
             mkdir -p monitoring
             curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.yml -o docker-compose.yml
             curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/monitoring/prometheus.yml -o monitoring/prometheus.yml
@@ -134,7 +136,7 @@ jobs:
           username: ${{ secrets.SERVER_MAIN_USER }}
           key: ${{ secrets.SERVER_MAIN_SSH_KEY }}
           script: |
-            cd /srv/project/
+            cd /srv/libproj/
             mkdir -p monitoring
             curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.yml -o docker-compose.yml
             curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/monitoring/prometheus.yml -o monitoring/prometheus.yml
